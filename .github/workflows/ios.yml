@@ -26,7 +26,11 @@ jobs:
           P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
           mkdir -p "$RUNNER_TEMP/llave"
-          printf '%s\n' "$P8" > "$RUNNER_TEMP/llave/AuthKey.p8"
+          # Se limpia lo que deja Windows (\r) y espacios sobrantes; se revisa la forma sin mostrar la llave.
+          printf '%s\n' "$P8" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -v '^$' > "$RUNNER_TEMP/llave/AuthKey.p8"
+          echo "Primera línea: $(head -1 "$RUNNER_TEMP/llave/AuthKey.p8")"
+          echo "Última línea: $(tail -1 "$RUNNER_TEMP/llave/AuthKey.p8")"
+          echo "Líneas: $(wc -l < "$RUNNER_TEMP/llave/AuthKey.p8")"
       - name: Generar proyecto
         run: cd "${{ inputs.app }}" && xcodegen generate
       - name: Compilar
