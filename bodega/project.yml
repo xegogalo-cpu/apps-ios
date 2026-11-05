@@ -1,0 +1,46 @@
+name: BodegaXD
+options:
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: UHQS8384D9
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "3.8.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  BodegaXD:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+      - ../comun
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xdcuenca.app
+        PRODUCT_NAME: BodegaXD
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    entitlements:
+      path: BodegaXD.entitlements
+      properties:
+        aps-environment: production
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Bodega XD
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: AccentColor
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSCameraUsageDescription: Para tomar la foto del comprobante de pago cuando pagas por transferencia.
+        NSLocationWhenInUseUsageDescription: Usamos tu ubicación solo para llevar tu pedido a domicilio y mostrarte el local más cercano.
+        LSApplicationQueriesSchemes: [whatsapp, comgooglemaps]
