@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="canal_avisos">Avisos</string>
+    <string name="canal_urgentes">Avisos urgentes</string>
+    <string name="sin_conexion">Sin conexión a internet.\nRevisa el wifi o los datos.</string>
+    <string name="reintentar">Reintentar</string>
+</resources>
