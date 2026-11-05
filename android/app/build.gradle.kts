@@ -10,10 +10,10 @@ val llaveFirebase = System.getenv("FIREBASE_API_KEY") ?: ""
 
 android {
     namespace = "com.xdcuenca.shell"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 100 + numero
         buildConfigField("String", "FIREBASE_API_KEY", "\"$llaveFirebase\"")
         buildConfigField("String", "FIREBASE_PROJECT", "\"cuadre-xd\"")
