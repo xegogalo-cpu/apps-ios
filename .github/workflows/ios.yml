@@ -31,6 +31,13 @@ jobs:
           echo "Primera línea: $(head -1 "$RUNNER_TEMP/llave/AuthKey.p8")"
           echo "Última línea: $(tail -1 "$RUNNER_TEMP/llave/AuthKey.p8")"
           echo "Líneas: $(wc -l < "$RUNNER_TEMP/llave/AuthKey.p8")"
+          echo "Largo de cada línea: $(awk '{printf "%d ", length}' "$RUNNER_TEMP/llave/AuthKey.p8")"
+          echo "Empieza con BEGIN: $(head -1 "$RUNNER_TEMP/llave/AuthKey.p8" | grep -c 'BEGIN PRIVATE KEY')"
+          echo "Termina con END: $(tail -1 "$RUNNER_TEMP/llave/AuthKey.p8" | grep -c 'END PRIVATE KEY')"
+          # Si el cuerpo quedó en otra forma (líneas pegadas o partidas), se rearma en bloques de 64 como manda el formato PEM.
+          CUERPO=$(sed -e '/BEGIN PRIVATE KEY/d' -e '/END PRIVATE KEY/d' "$RUNNER_TEMP/llave/AuthKey.p8" | tr -d ' \n\t')
+          { echo "-----BEGIN PRIVATE KEY-----"; echo "$CUERPO" | fold -w 64; echo "-----END PRIVATE KEY-----"; } > "$RUNNER_TEMP/llave/AuthKey.p8"
+          echo "Largo del cuerpo: ${#CUERPO} · válido: $(echo "$CUERPO" | base64 -d >/dev/null 2>&1 && echo si || echo no)"
       - name: Generar proyecto
         run: cd "${{ inputs.app }}" && xcodegen generate
       - name: Compilar
