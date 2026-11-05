@@ -10,9 +10,6 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1,2"
-  configs:
-    Release:
-      CODE_SIGN_IDENTITY: "Apple Distribution"
 targets:
   BodegaXD:
     type: application
