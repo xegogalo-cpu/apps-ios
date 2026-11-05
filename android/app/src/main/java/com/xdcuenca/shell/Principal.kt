@@ -234,7 +234,7 @@ class Principal : AppCompatActivity() {
         try { startActivity(Intent(Intent.ACTION_VIEW, u).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: ActivityNotFoundException) {}
     }
 
-    private fun quiereCamara(p: FileChooserParams?): Boolean =
+    private fun quiereCamara(p: WebChromeClient.FileChooserParams?): Boolean =
         p != null && (p.isCaptureEnabled || p.acceptTypes.any { it.startsWith("image") })
 
     private fun abrirSelector(p: WebChromeClient.FileChooserParams?) {
