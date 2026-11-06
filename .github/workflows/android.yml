@@ -32,7 +32,9 @@ jobs:
       - name: Llave de firma
         env:
           KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
-        run: echo "$KS" | base64 -d > "$RUNNER_TEMP/firma.keystore"
+        run: |
+          printf '%s' "$KS" | tr -d ' \r\n\t' | base64 -d -i > "$RUNNER_TEMP/firma.keystore"
+          echo "Llave: $(stat -c %s "$RUNNER_TEMP/firma.keystore") bytes"
 
       - name: Compilar
         env:
