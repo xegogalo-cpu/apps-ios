@@ -10,7 +10,7 @@ on:
         required: true
         default: maxd
         type: choice
-        options: [maxd, bodega]
+        options: [maxd, bodega, enmarcha]
 jobs:
   subir:
     runs-on: macos-15
@@ -51,7 +51,7 @@ jobs:
           ISS: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           cd "${{ inputs.app }}"
-          if [ "${{ inputs.app }}" = "maxd" ]; then S=maXD; else S=BodegaXD; fi
+          case "${{ inputs.app }}" in maxd) S=maXD;; bodega) S=BodegaXD;; enmarcha) S=EnMarcha;; esac
           BUILD=$(( ${{ github.run_number }} + 1 ))
           xcodebuild -project "$S.xcodeproj" -scheme "$S" -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/app.xcarchive" \
