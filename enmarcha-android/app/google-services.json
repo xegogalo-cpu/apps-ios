@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "855321426196",
+    "project_id": "en-marcha-red",
+    "storage_bucket": "en-marcha-red.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:855321426196:android:768283328b7a3d0d906a01",
+        "android_client_info": {
+          "package_name": "ec.enmarcha.red"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "855321426196-b090tsdpimov0ec4cbcqtmvsf8paamnb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnv2MP4G4jdMYmKkMvTklRPAiiILF-S7Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "855321426196-b090tsdpimov0ec4cbcqtmvsf8paamnb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "855321426196-pfhfv4qu0aoneaebq1h8fr32h2o6joco.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "ec.enmarcha.red"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

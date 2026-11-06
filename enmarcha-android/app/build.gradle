@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.application'
+    id 'com.google.gms.google-services'
+}
+
+android {
+    namespace 'ec.enmarcha.red'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'ec.enmarcha.red'
+        minSdk 24
+        targetSdk 36
+        versionCode 2
+        versionName '1.1'
+    }
+
+    // La llave de firma llega por variables de entorno (secretos de GitHub); nunca va en el repositorio.
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('ANDROID_KEYSTORE_PATH') ?: 'firma.keystore')
+            storePassword System.getenv('ANDROID_KEYSTORE_PASS')
+            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: 'enmarcha'
+            keyPassword System.getenv('ANDROID_KEY_PASS') ?: System.getenv('ANDROID_KEYSTORE_PASS')
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:33.16.0')
+    implementation 'com.google.firebase:firebase-messaging'
+}
