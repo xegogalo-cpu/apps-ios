@@ -15,7 +15,12 @@ let ROJO = Color(red: 240/255, green: 69/255, blue: 43/255)     // #F0452B
 
 // Dominios que se quedan dentro de la app (el resto se abre afuera)
 let DOMINIOS_PROPIOS = ["en-marcha-red.web.app", "en-marcha-red.firebaseapp.com", "googleapis.com", "gstatic.com",
-                        "cloudfunctions.net", "run.app", "cdnjs.cloudflare.com", "openstreetmap.org"]
+                        "cloudfunctions.net", "run.app", "cdnjs.cloudflare.com", "openstreetmap.org",
+                        "accounts.google.com", "google.com", "googleusercontent.com"]
+
+// Google no deja iniciar sesión desde vistas web incrustadas; con el agente de Safari sí.
+// Se agrega la marca EnMarcha-iOS para que la web sepa que corre dentro de la app nativa.
+let AGENTE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 EnMarcha-iOS/1.2 nativo"
 
 struct ContentView: View {
     @StateObject private var web = WebEstado()
@@ -104,9 +109,10 @@ struct MarchaWebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.websiteDataStore = .default()                   // mantiene la sesión iniciada
-        config.applicationNameForUserAgent = "EnMarcha-iOS/1.1 nativo"  // la web sabe que corre dentro de la app con avisos
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true  // ventana de Google
         config.userContentController.add(context.coordinator, name: "enmarcha")
         let w = WKWebView(frame: .zero, configuration: config)
+        w.customUserAgent = AGENTE
         w.navigationDelegate = context.coordinator
         w.uiDelegate = context.coordinator
         w.allowsBackForwardNavigationGestures = true
@@ -165,8 +171,31 @@ struct MarchaWebView: UIViewRepresentable {
         // Enlaces con target=_blank (WhatsApp, Google Maps, enlaces de comunicados): afuera
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                      for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-            if let u = action.request.url { UIApplication.shared.open(u) }
-            return nil
+            let url = action.request.url
+            let host = url?.host?.lowercased() ?? ""
+            let vacia = url == nil || url!.absoluteString.isEmpty || url!.absoluteString == "about:blank"
+            // WhatsApp, mapas y enlaces externos: afuera. La ventana de inicio con Google: en una hoja encima.
+            if !vacia, let u = url, !esPropio(host) {
+                UIApplication.shared.open(u)
+                return nil
+            }
+            let hija = WKWebView(frame: .zero, configuration: configuration)
+            hija.customUserAgent = AGENTE
+            hija.navigationDelegate = self
+            hija.uiDelegate = self
+            let nav = UINavigationController(rootViewController: VentanaHoja(web: hija))
+            nav.modalPresentationStyle = .pageSheet
+            presentarVC(nav)
+            return hija
+        }
+
+        // window.close() al terminar el inicio con Google
+        func webViewDidClose(_ webView: WKWebView) {
+            var r: UIResponder? = webView
+            while let x = r {
+                if let vc = x as? VentanaHoja { vc.dismiss(animated: true); return }
+                r = x.next
+            }
         }
 
         // Cámara del lector de asistencia: se concede a la propia app (iOS pregunta una vez)
@@ -178,14 +207,16 @@ struct MarchaWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-            estado.cargando = true
+            if webView === estado.webView { estado.cargando = true }
         }
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            guard webView === estado.webView else { return }
             estado.cargando = false
             estado.cargoUnaVez = true
             estado.sinInternet = false
         }
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            guard webView === estado.webView else { return }
             estado.cargando = false
             if (error as NSError).code != NSURLErrorCancelled { estado.sinInternet = true }
         }
@@ -222,5 +253,25 @@ struct MarchaWebView: UIViewRepresentable {
             var top = raiz; while let p = top.presentedViewController { top = p }
             top.present(a, animated: true)
         }
+        private func presentarVC(_ vc: UIViewController) {
+            guard let raiz = UIApplication.shared.connectedScenes
+                    .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController }).first else { return }
+            var top = raiz; while let p = top.presentedViewController { top = p }
+            top.present(vc, animated: true)
+        }
     }
+}
+
+// Hoja para la ventana de inicio con Google: se cierra sola al terminar o con el botón Cerrar.
+final class VentanaHoja: UIViewController {
+    let web: WKWebView
+    init(web: WKWebView) { self.web = web; super.init(nibName: nil, bundle: nil) }
+    required init?(coder: NSCoder) { fatalError() }
+    override func loadView() { view = web }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "En Marcha"
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Cerrar", style: .done, target: self, action: #selector(cerrar))
+    }
+    @objc func cerrar() { dismiss(animated: true) }
 }
