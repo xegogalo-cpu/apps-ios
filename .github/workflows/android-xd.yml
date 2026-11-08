@@ -1,0 +1,56 @@
+# Compila las apps nativas de Android de Grupo XD (maXD y Bodega XD) sin firmar.
+# La firma se hace aparte, con la llave de subida de Play, y el .aab firmado se sube a Play Console.
+# Se corre a mano: Actions → "Compilar app de Android" → Run workflow → elegir maxd o bodega.
+name: Compilar apps Android de XD (maXD y Bodega)
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "¿Qué app?"
+        required: true
+        default: maxd
+        type: choice
+        options: [maxd, bodega]
+permissions:
+  contents: write
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.11.1" }
+      - name: Configuración pública de Firebase
+        # La llave web de Firebase ya es pública (va en la página de maXD); se toma de ahí para no guardarla en el repo.
+        run: |
+          K=$(curl -s https://maxdec.netlify.app/ | grep -o 'apiKey: *"AIza[^"]*"' | head -1 | sed 's/.*"\(AIza[^"]*\)".*/\1/')
+          if [ -z "$K" ]; then echo "No se encontró la llave pública de Firebase"; exit 1; fi
+          echo "FIREBASE_API_KEY=$K" >> "$GITHUB_ENV"
+      - name: Compilar
+        working-directory: android
+        env:
+          NUMERO_BUILD: ${{ github.run_number }}
+        run: |
+          A="${{ inputs.app }}"; T="bundle${A^}Release"
+          gradle --no-daemon "$T"
+          ls -la app/build/outputs/bundle/*/
+      - name: Guardar el .aab en la rama "compilados" (sin firmar; se firma aparte)
+        run: |
+          A="${{ inputs.app }}"
+          F=$(ls android/app/build/outputs/bundle/*/*.aab | head -1)
+          mkdir -p /tmp/out && cp "$F" "/tmp/out/${A}-sin-firmar.aab"
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          git fetch origin compilados || true
+          if git rev-parse --verify origin/compilados >/dev/null 2>&1; then git checkout -B compilados origin/compilados; else git switch --orphan compilados; fi
+          cp "/tmp/out/${A}-sin-firmar.aab" .
+          git add "${A}-sin-firmar.aab"
+          git commit -m "${A} build ${{ github.run_number }}" || true
+          git push origin compilados
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app }}-sin-firmar
+          path: android/app/build/outputs/bundle/*/*.aab
+          retention-days: 7
