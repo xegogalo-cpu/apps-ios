@@ -20,6 +20,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import java.io.File
@@ -105,6 +107,19 @@ class Principal : AppCompatActivity() {
         raiz.addView(sinConexion, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         sinConexion.visibility = View.GONE
         setContentView(raiz)
+
+        /* 7-nov-2026 · Android 15+ con targetSdk 35/36 dibuja la app DEBAJO de la barra de estado y de la barra de
+           navegación (edge-to-edge obligatorio). En maXD el botón "Atender yo" del chat de WhatsApp quedaba tapado por
+           la barra de gestos y el encabezado por la hora. Se reserva ese espacio con relleno, y también el del teclado
+           (ime) para que no tape lo que se escribe. */
+        raiz.setBackgroundColor(Color.parseColor(getString(R.string.color_barra)))
+        ViewCompat.setOnApplyWindowInsetsListener(raiz) { v, insets ->
+            val b = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
+            )
+            v.setPadding(b.left, b.top, b.right, b.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
         with(web.settings) {
             javaScriptEnabled = true
