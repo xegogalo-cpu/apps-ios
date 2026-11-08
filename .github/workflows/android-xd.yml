@@ -31,15 +31,14 @@ jobs:
           echo "FIREBASE_API_KEY=$K" >> "$GITHUB_ENV"
       - name: Compilar
         working-directory: android
-        env:
         run: |
+          export NUMERO_BUILD=$(( ${{ github.run_number }} + 10 ))   # el workflow anterior llegó a 107: seguimos por encima
           A="${{ inputs.app }}"; T="bundle${A^}Release"
           gradle --no-daemon "$T"
           ls -la app/build/outputs/bundle/*/
       - name: Guardar el .aab en la rama "compilados" (sin firmar; se firma aparte)
         run: |
           A="${{ inputs.app }}"
-          export NUMERO_BUILD=$(( ${{ github.run_number }} + 10 ))   # el workflow anterior llegó a 107: seguimos por encima
           F=$(ls android/app/build/outputs/bundle/*/*.aab | head -1)
           mkdir -p /tmp/out && cp "$F" "/tmp/out/${A}-sin-firmar.aab"
           git config user.name "github-actions"; git config user.email "actions@github.com"
