@@ -32,7 +32,6 @@ jobs:
       - name: Compilar
         working-directory: android
         env:
-          NUMERO_BUILD: ${{ github.run_number }}
         run: |
           A="${{ inputs.app }}"; T="bundle${A^}Release"
           gradle --no-daemon "$T"
@@ -40,6 +39,7 @@ jobs:
       - name: Guardar el .aab en la rama "compilados" (sin firmar; se firma aparte)
         run: |
           A="${{ inputs.app }}"
+          export NUMERO_BUILD=$(( ${{ github.run_number }} + 10 ))   # el workflow anterior llegó a 107: seguimos por encima
           F=$(ls android/app/build/outputs/bundle/*/*.aab | head -1)
           mkdir -p /tmp/out && cp "$F" "/tmp/out/${A}-sin-firmar.aab"
           git config user.name "github-actions"; git config user.email "actions@github.com"
