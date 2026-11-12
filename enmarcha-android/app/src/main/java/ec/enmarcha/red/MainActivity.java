@@ -3,6 +3,7 @@ package ec.enmarcha.red;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -11,6 +12,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
+import android.provider.MediaStore;
+import android.util.Base64;
+import android.widget.Toast;
+import java.io.OutputStream;
 import android.webkit.CookieManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -56,6 +61,13 @@ public class MainActivity extends Activity {
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(242, 243, 248));
         setContentView(web);
+        // Android 13+ (y obligatorio desde targetSdk 36): el botón atrás ya no llama a onBackPressed.
+        // Se registra el callback nuevo para que «atrás» cierre ventanas y vuelva a Inicio dentro de la web.
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    () -> { if (web != null && web.canGoBack()) web.goBack(); else finish(); });
+        }
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -65,7 +77,7 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportMultipleWindows(true);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
-        s.setUserAgentString(s.getUserAgentString() + " EnMarcha-Android/1.1");
+        s.setUserAgentString(s.getUserAgentString() + " EnMarcha-Android/1.2");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
 
@@ -194,6 +206,53 @@ public class MainActivity extends Activity {
                 else if ("listo".equals(mensaje)) enviarToken();
             });
         }
+
+        /** Guarda en la galería (Imágenes/En Marcha) una imagen PNG que manda la web en base64 (foto de perfil de campaña). */
+        @JavascriptInterface
+        public void guardarImagen(String base64, String nombre) {
+            Uri u = guardar(base64, nombre);
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, u != null ? "Foto guardada en tu galería" : "No se pudo guardar la foto", Toast.LENGTH_LONG).show();
+                avisarWeb(u != null ? "guardada" : "error");
+            });
+        }
+
+        /** Guarda la imagen y abre el menú de compartir de Android (WhatsApp, Facebook, Instagram…). */
+        @JavascriptInterface
+        public void compartirImagen(String base64, String nombre, String texto) {
+            Uri u = guardar(base64, nombre);
+            runOnUiThread(() -> {
+                if (u == null) { Toast.makeText(MainActivity.this, "No se pudo preparar la foto", Toast.LENGTH_LONG).show(); avisarWeb("error"); return; }
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType("image/png");
+                i.putExtra(Intent.EXTRA_STREAM, u);
+                if (texto != null && !texto.isEmpty()) i.putExtra(Intent.EXTRA_TEXT, texto);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try { startActivity(Intent.createChooser(i, "Compartir foto")); avisarWeb("compartida"); }
+                catch (ActivityNotFoundException e) { avisarWeb("guardada"); }
+            });
+        }
+    }
+
+    private Uri guardar(String base64, String nombre) {
+        try {
+            String b = base64.contains(",") ? base64.substring(base64.indexOf(',') + 1) : base64;
+            byte[] datos = Base64.decode(b, Base64.DEFAULT);
+            ContentValues v = new ContentValues();
+            v.put(MediaStore.Images.Media.DISPLAY_NAME, (nombre == null || nombre.isEmpty()) ? "foto-en-marcha.png" : nombre);
+            v.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+            if (Build.VERSION.SDK_INT >= 29) v.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/En Marcha");
+            Uri u = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+            if (u == null) return null;
+            try (OutputStream o = getContentResolver().openOutputStream(u)) { o.write(datos); }
+            return u;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void avisarWeb(String estado) {
+        if (web != null) web.evaluateJavascript("window.imagenNativa&&window.imagenNativa('" + estado + "')", null);
     }
 
     private boolean avisosPermitidos() {
